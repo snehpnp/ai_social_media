@@ -1,0 +1,20 @@
+import { Router } from 'express';
+import {
+  facebookAuth,
+  facebookCallback,
+  getConnectedAccounts,
+  disconnectAccount
+} from '../controllers/socialAuthController';
+import { authenticate } from '../middlewares/authMiddleware';
+
+const router = Router();
+
+// OAuth endpoints (public, but they use the token in query string)
+router.get('/auth/facebook', facebookAuth);
+router.get('/auth/facebook/callback', facebookCallback);
+
+// API endpoints (require auth header)
+router.get('/accounts', authenticate, getConnectedAccounts);
+router.delete('/accounts/:platform', authenticate, disconnectAccount);
+
+export default router;

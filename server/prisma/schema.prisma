@@ -1,0 +1,113 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum SubscriptionPlan {
+  FREE
+  BASIC
+  PRO
+}
+
+enum PostStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHED
+  FAILED
+}
+
+model User {
+  id               String           @id @default(uuid())
+  email            String           @unique
+  password         String
+  name             String?
+  role             Role             @default(USER)
+  plan             SubscriptionPlan @default(FREE)
+  aiUsageCount     Int              @default(0)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  socialAccounts   SocialAccount[]
+  posts            Post[]
+  subscriptions    Subscription[]
+}
+
+model SocialAccount {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  platform     String   // e.g., "facebook", "instagram", "youtube", "twitter"
+  platformId   String   // The ID from the social platform
+  accessToken  String   @db.Text
+  refreshToken String?  @db.Text
+  expiresAt    DateTime?
+  username     String?
+  profilePic   String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([userId, platform, platformId])
+}
+
+model Post {
+  id           String     @id @default(uuid())
+  userId       String
+  user         User       @relation(fields: [userId], references: [id])
+  caption      String?    @db.Text
+  mediaUrls    String[]   // Array of image/video URLs
+  status       PostStatus @default(DRAFT)
+  scheduledAt  DateTime?
+  publishedAt  DateTime?
+  platforms    String[]   // Which platforms to post on
+  errorTrace   String?    @db.Text // Store API errors for tracing
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+model Subscription {
+  id           String           @id @default(uuid())
+  userId       String
+  user         User             @relation(fields: [userId], references: [id])
+  plan         SubscriptionPlan
+  status       String           // e.g., "active", "cancelled"
+  startDate    DateTime         @default(now())
+  endDate      DateTime
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+}
+
+model AIProvider {
+  id           String   @id @default(uuid())
+  name         String   // Display name e.g. "Groq", "Stability AI"
+  slug         String   @unique // e.g. "groq", "stability", "openai"
+  apiKey       String   @db.Text
+  apiUrl       String?  // Custom endpoint URL
+  model        String?  // Default model e.g. "llama-3.3-70b-versatile"
+  isEnabled    Boolean  @default(true)
+  isVerified   Boolean  @default(false) // Has been tested successfully
+  lastTestedAt DateTime?
+  capabilities String[] // e.g. ["text", "image", "code"]
+  config       Json?    // Extra config as JSON
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model SystemSetting {
+  id          String   @id @default(uuid())
+  key         String   @unique // e.g. "FACEBOOK_APP_ID", "FACEBOOK_APP_SECRET"
+  value       String   @db.Text
+  description String?
+  isPublic    Boolean  @default(false)
+  updatedAt   DateTime @updatedAt
+}
