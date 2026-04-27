@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { CONFIG, getApiUrl } from "@/lib/config";
+import { getToken } from "@/lib/auth";
 
 export function DynamicFavicon() {
   const [faviconUrl, setFaviconUrl] = useState("https://framerusercontent.com/images/OmiFNAsUnVnklI6y2SA9EWiDJBk.png?width=915&height=273");
 
   useEffect(() => {
-    // Try to get favicon from localStorage first (set by dashboard)
+    // Try to get favicon from localStorage first (app setting - not auth data)
     const savedFavicon = localStorage.getItem("APP_FAVICON_URL");
     if (savedFavicon) {
       setFaviconUrl(savedFavicon);
@@ -16,7 +17,7 @@ export function DynamicFavicon() {
     // Also try to fetch from API if token exists
     const fetchFavicon = async () => {
       try {
-        const token = localStorage.getItem("token");
+        const token = getToken(); // sessionStorage se token lo
         if (!token) return;
         
         const res = await fetch(getApiUrl(CONFIG.API.ADMIN_SETTINGS), {
@@ -27,7 +28,7 @@ export function DynamicFavicon() {
           const data = await res.json();
           if (data.APP_FAVICON_URL) {
             setFaviconUrl(data.APP_FAVICON_URL);
-            localStorage.setItem("APP_FAVICON_URL", data.APP_FAVICON_URL);
+            localStorage.setItem("APP_FAVICON_URL", data.APP_FAVICON_URL); // favicon cache - ok
           }
         }
       } catch {

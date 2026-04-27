@@ -8,6 +8,7 @@ import {
   Heart, MessageCircle, Share2, Clock,
 } from "lucide-react";
 import { CONFIG, getApiUrl } from "@/lib/config";
+import { getToken } from "@/lib/auth";
 
 const cardStyle: React.CSSProperties = {
   background: "var(--bg-card)", borderRadius: 12, border: "1px solid var(--border-color)",
@@ -28,7 +29,7 @@ export default function AccountsPage() {
 
   const fetchAccounts = async () => {
     try {
-      const token = localStorage.getItem("token");
+      const token = getToken();
       const res = await axios.get(getApiUrl(CONFIG.API.SOCIAL_ACCOUNTS), {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -47,7 +48,7 @@ export default function AccountsPage() {
   const fetchFacebookPageInfo = async () => {
     setLoadingPageInfo(true);
     try {
-      const token = localStorage.getItem("token");
+      const token = getToken();
       const res = await axios.get(getApiUrl(CONFIG.API.FACEBOOK_PAGE_INFO), {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -78,7 +79,7 @@ export default function AccountsPage() {
 
   const handleConnect = (platformId: string) => {
     if (platformId === "facebook") {
-      const token = localStorage.getItem("token");
+      const token = getToken();
       window.location.href = `${getApiUrl(CONFIG.API.FACEBOOK_AUTH)}?token=${token}`;
     } else if (platformId === "instagram") {
       toast.error("Instagram integration coming soon!");
@@ -88,7 +89,7 @@ export default function AccountsPage() {
   const handleDisconnect = async (platformId: string) => {
     if (!confirm(`Disconnect ${platformId}?`)) return;
     try {
-      const token = localStorage.getItem("token");
+      const token = getToken();
       await axios.delete(getApiUrl(CONFIG.API.DELETE_ACCOUNT(platformId)), {
         headers: { Authorization: `Bearer ${token}` }
       });

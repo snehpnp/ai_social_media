@@ -11,8 +11,9 @@ import {
   ChevronDown, ChevronUp, RefreshCw,
 } from "lucide-react";
 
+import { getToken } from "@/lib/auth";
+
 const API = getApiUrl(CONFIG.API.AI_PROVIDERS);
-function getToken() { return localStorage.getItem("token") || ""; }
 function authH() { return { headers: { Authorization: `Bearer ${getToken()}` } }; }
 
 const cardStyle: React.CSSProperties = {

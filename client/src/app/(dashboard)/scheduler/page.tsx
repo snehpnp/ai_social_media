@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { toast, Toaster } from "react-hot-toast";
 import { CONFIG, getApiUrl } from "@/lib/config";
+import { getToken } from "@/lib/auth";
 import {
   Calendar, Clock, Camera, Globe, Video, Loader2,
   CheckCircle2, CalendarDays, Edit2, X,
@@ -30,7 +31,7 @@ export default function SchedulerPage() {
   const [updating, setUpdating] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const token = getToken();
     if (!token) return;
     axios
       .get(API, { headers: { Authorization: `Bearer ${token}` } })
@@ -60,7 +61,7 @@ export default function SchedulerPage() {
     if (!editingPost || !editDate || !editTime) return;
     setUpdating(true);
     try {
-      const token = localStorage.getItem("token");
+      const token = getToken();
       const newScheduledAt = new Date(`${editDate}T${editTime}`);
       await axios.patch(
         `${API}/${editingPost}`,

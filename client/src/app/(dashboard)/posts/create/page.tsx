@@ -9,6 +9,7 @@ import {
   Loader2, X, Eye, Clock,
 } from "lucide-react";
 import { CONFIG, getApiUrl } from "@/lib/config";
+import { getToken } from "@/lib/auth";
 
 const API = getApiUrl(CONFIG.API.POSTS);
 
@@ -46,7 +47,7 @@ export default function CreatePostPage() {
   const handleAIGenerate = async () => {
     setGenerating(true);
     try {
-      const token = localStorage.getItem("token");
+      const token = getToken();
       const res = await axios.post(getApiUrl(CONFIG.API.AI_GENERATE), {
         prompt: caption || "Write an engaging social media post",
         type: "caption"
@@ -72,7 +73,7 @@ export default function CreatePostPage() {
 
     setGeneratingImage(true);
     try {
-      const token = localStorage.getItem("token");
+      const token = getToken();
       const res = await axios.post(getApiUrl(CONFIG.API.AI_GENERATE), {
         prompt,
         type: "image"
@@ -126,7 +127,7 @@ export default function CreatePostPage() {
     if (status === "SCHEDULED" && (!scheduleDate || !scheduleTime)) return toast.error("Set schedule date & time");
 
     setLoading(true);
-    const token = localStorage.getItem("token");
+    const token = getToken();
     try {
       // Step 1: Create the post
       const createRes = await axios.post(API, {

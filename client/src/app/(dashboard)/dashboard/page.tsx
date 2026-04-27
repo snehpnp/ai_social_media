@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { toast, Toaster } from "react-hot-toast";
 import { CONFIG, getApiUrl } from "@/lib/config";
+import { getToken } from "@/lib/auth";
 
 const API = getApiUrl(CONFIG.API.DASHBOARD_STATS);
 
@@ -47,7 +48,7 @@ export default function DashboardPage() {
     const u = localStorage.getItem("user");
     if (u) setUser(JSON.parse(u));
 
-    const token = localStorage.getItem("token");
+    const token = getToken();
     if (!token) return;
 
     axios

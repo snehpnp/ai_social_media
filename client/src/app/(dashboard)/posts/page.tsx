@@ -5,6 +5,7 @@ import Link from "next/link";
 import axios from "axios";
 import { toast, Toaster } from "react-hot-toast";
 import { CONFIG, getApiUrl } from "@/lib/config";
+import { getToken } from "@/lib/auth";
 import {
   Plus, Eye, Trash2, Loader2, Send, Clock, FileText, AlertCircle,
   CheckCircle2, Camera, Globe, Video, Search,
@@ -33,7 +34,7 @@ export default function PostsPage() {
 
   const fetchPosts = async () => {
     setLoading(true);
-    const token = localStorage.getItem("token");
+    const token = getToken();
     try {
       const res = await axios.get(API, { headers: { Authorization: `Bearer ${token}` } });
       setPosts(res.data);
@@ -45,7 +46,7 @@ export default function PostsPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this post?")) return;
-    const token = localStorage.getItem("token");
+    const token = getToken();
     try {
       await axios.delete(`${API}/${id}`, { headers: { Authorization: `Bearer ${token}` } });
       toast.success("Post deleted"); fetchPosts();

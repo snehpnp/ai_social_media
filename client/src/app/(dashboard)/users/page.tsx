@@ -6,10 +6,12 @@ import { toast, Toaster } from "react-hot-toast";
 import { CONFIG, getApiUrl } from "@/lib/config";
 import { UserPlus, Search, Pencil, Trash2, Loader2, Eye, X, FileText, Clock, Sparkles, Calendar, MessageSquare, Image as ImageIcon, Send, AlertCircle, CheckCircle2 } from "lucide-react";
 
-const API = getApiUrl(CONFIG.API.ADMIN_SETTINGS);
+import { getToken } from "@/lib/auth";
+
+const API = getApiUrl(CONFIG.API.ADMIN_USERS);
 const POSTS_API = getApiUrl(CONFIG.API.POSTS);
-function getToken() { return localStorage.getItem("token") || ""; }
-function authHeader() { return { headers: { Authorization: `Bearer ${getToken()}` } }; }
+function getTokenFn() { return getToken(); }
+function authHeader() { return { headers: { Authorization: `Bearer ${getTokenFn()}` } }; }
 
 const cardStyle: React.CSSProperties = {
   background: "var(--bg-card)", borderRadius: 12, border: "1px solid var(--border-color)",
@@ -67,7 +69,10 @@ export default function UserManagementPage() {
 
   const fetchUsers = async () => {
     setLoading(true);
-    try { const r = await axios.get(API, authHeader()); setUsers(r.data); }
+    try {
+      const r = await axios.get(API, authHeader());
+      setUsers(Array.isArray(r.data) ? r.data : (r.data?.users || []));
+    }
     catch { toast.error("Could not load users"); }
     finally { setLoading(false); }
   };
@@ -119,7 +124,7 @@ export default function UserManagementPage() {
   };
 
   // Only show regular users (not admins)
-  const regularUsers = users.filter((u: any) => u.role === "USER");
+  const regularUsers = Array.isArray(users) ? users.filter((u: any) => u.role === "USER") : [];
   const filtered = regularUsers.filter((u: any) =>
     u.name?.toLowerCase().includes(search.toLowerCase()) ||
     u.email?.toLowerCase().includes(search.toLowerCase())

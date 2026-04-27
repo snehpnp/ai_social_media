@@ -9,6 +9,7 @@ import {
   Sparkles, Mail, Lock, User, Loader2, ArrowRight,
   Eye, EyeOff, CheckCircle2,
 } from "lucide-react";
+import { setAuth } from "@/lib/auth";
 
 export default function AuthPage() {
   const searchParams = useSearchParams();
@@ -38,8 +39,7 @@ export default function AuthPage() {
         email: loginEmail, password: loginPwd,
       });
       if (res.data.token) {
-        localStorage.setItem("token", res.data.token);
-        localStorage.setItem("user", JSON.stringify(res.data.user));
+        setAuth(res.data.token, res.data.user);
         toast.success("Login successful!");
         setTimeout(() => router.push("/dashboard"), 800);
       }
@@ -56,8 +56,7 @@ export default function AuthPage() {
         name: signupName, email: signupEmail, password: signupPwd,
       });
       if (res.data.token) {
-        localStorage.setItem("token", res.data.token);
-        localStorage.setItem("user", JSON.stringify(res.data.user));
+        setAuth(res.data.token, res.data.user);
         toast.success("Account created!");
         setTimeout(() => router.push("/dashboard"), 800);
       }

@@ -15,9 +15,10 @@ import {
   CheckCircle2
 } from "lucide-react";
 
+import { getToken } from "@/lib/auth";
+
 const API = getApiUrl(CONFIG.API.ADMIN_SETTINGS);
 
-function getToken() { return localStorage.getItem("token") || ""; }
 function authHeader() { return { headers: { Authorization: `Bearer ${getToken()}` } }; }
 
 const cardStyle: React.CSSProperties = {

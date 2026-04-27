@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { toast, Toaster } from "react-hot-toast";
+import { CONFIG, getApiUrl } from "@/lib/config";
 import { 
   Globe, 
   Save, 
@@ -27,8 +28,9 @@ const FacebookIcon = ({ style }: { style?: React.CSSProperties }) => (
   </svg>
 );
 
-const API = "http://localhost:5000/api/admin/settings";
-function authH() { return { headers: { Authorization: `Bearer ${localStorage.getItem("token") || ""}` } }; }
+const API = getApiUrl(CONFIG.API.ADMIN_SETTINGS);
+import { getToken } from "@/lib/auth";
+function authH() { return { headers: { Authorization: `Bearer ${getToken() || ""}` } }; }
 
 const inputStyle: React.CSSProperties = {
   width: "100%", 

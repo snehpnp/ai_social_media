@@ -17,10 +17,12 @@ import {
   BarChart3,
 } from "lucide-react";
 
+import { getToken, getUser, clearAuth } from "@/lib/auth";
+
 const adminItems = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "User Management", href: "/users", icon: Users },
-  { name: "Social Config", href: "/social-config", icon: Globe },
+  // { name: "Social Config", href: "/social-config", icon: Globe },
   { name: "AI Settings", href: "/ai-config", icon: Sparkles },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
   { name: "Admin Settings", href: "/admin-settings", icon: Settings2 },
@@ -47,11 +49,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   });
 
   useEffect(() => {
-    const userData = localStorage.getItem("user");
+    const userData = getUser();
     if (userData) {
       try {
-        const parsed = JSON.parse(userData);
-        setUser(parsed);
+        setUser(userData);
       } catch {
         router.push("/login");
       }
@@ -69,7 +70,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     // Fetch app settings for logo
     const fetchSettings = async () => {
       try {
-        const token = localStorage.getItem("token");
+        const token = getToken();
         const res = await axios.get(getApiUrl(CONFIG.API.ADMIN_SETTINGS), {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -100,8 +101,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const sidebarItems = user?.role === "ADMIN" ? adminItems : userItems;
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+    clearAuth();
     router.push("/login");
   };
 

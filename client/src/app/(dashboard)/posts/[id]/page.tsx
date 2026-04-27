@@ -10,6 +10,7 @@ import {
   Globe, Send, Loader2, Image as ImageIcon, Calendar
 } from "lucide-react";
 import Link from "next/link";
+import { getToken } from "@/lib/auth";
 
 const API = getApiUrl(CONFIG.API.POSTS);
 
@@ -33,7 +34,7 @@ export default function PostDetailsPage() {
 
   const fetchPost = async () => {
     try {
-      const token = localStorage.getItem("token");
+      const token = getToken();
       const res = await axios.get(`${API}/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -51,7 +52,7 @@ export default function PostDetailsPage() {
     
     setPublishing(true);
     try {
-      const token = localStorage.getItem("token");
+      const token = getToken();
       const res = await axios.post(`${API}/${id}/publish`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
