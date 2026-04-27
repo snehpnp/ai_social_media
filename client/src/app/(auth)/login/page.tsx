@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
 import { toast, Toaster } from "react-hot-toast";
+import { CONFIG, getApiUrl } from "@/lib/config";
 import {
   Sparkles, Mail, Lock, User, Loader2, ArrowRight,
   Eye, EyeOff, CheckCircle2,
@@ -33,7 +34,7 @@ export default function AuthPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/login", {
+      const res = await axios.post(getApiUrl(CONFIG.API.LOGIN), {
         email: loginEmail, password: loginPwd,
       });
       if (res.data.token) {
@@ -51,7 +52,7 @@ export default function AuthPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/register", {
+      const res = await axios.post(getApiUrl(CONFIG.API.REGISTER), {
         name: signupName, email: signupEmail, password: signupPwd,
       });
       if (res.data.token) {

@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { toast, Toaster } from "react-hot-toast";
+import { CONFIG, getApiUrl } from "@/lib/config";
 import {
   BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell,
@@ -11,7 +13,7 @@ import {
   BarChart3, ArrowUpRight, ArrowDownRight,
 } from "lucide-react";
 
-const API = "http://localhost:5000/api/dashboard/stats";
+const API = getApiUrl(CONFIG.API.DASHBOARD_STATS);
 const cardStyle: React.CSSProperties = {
   background: "var(--bg-card)", borderRadius: 12, border: "1px solid var(--border-color)",
   boxShadow: "0 1px 3px rgba(0,0,0,0.04)",

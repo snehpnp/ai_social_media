@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { toast, Toaster } from "react-hot-toast";
+import { CONFIG, getApiUrl } from "@/lib/config";
 import {
   Key, Zap, ShieldCheck, Brain, Sparkles, CheckCircle2, AlertCircle,
   Loader2, Settings2, X, Eye, EyeOff, Plug, PlugZap, Trash2,
@@ -10,7 +11,7 @@ import {
   ChevronDown, ChevronUp, RefreshCw,
 } from "lucide-react";
 
-const API = "http://localhost:5000/api/ai-providers";
+const API = getApiUrl(CONFIG.API.AI_PROVIDERS);
 function getToken() { return localStorage.getItem("token") || ""; }
 function authH() { return { headers: { Authorization: `Bearer ${getToken()}` } }; }
 

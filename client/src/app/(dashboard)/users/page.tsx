@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { toast, Toaster } from "react-hot-toast";
+import { CONFIG, getApiUrl } from "@/lib/config";
 import { UserPlus, Search, Pencil, Trash2, Loader2, Eye, X, FileText, Clock, Sparkles, Calendar, MessageSquare, Image as ImageIcon, Send, AlertCircle, CheckCircle2 } from "lucide-react";
 
-const API = "http://localhost:5000/api/admin/users";
-const POSTS_API = "http://localhost:5000/api/posts";
+const API = getApiUrl(CONFIG.API.ADMIN_SETTINGS);
+const POSTS_API = getApiUrl(CONFIG.API.POSTS);
 function getToken() { return localStorage.getItem("token") || ""; }
 function authHeader() { return { headers: { Authorization: `Bearer ${getToken()}` } }; }
 

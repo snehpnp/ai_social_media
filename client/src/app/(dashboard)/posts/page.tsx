@@ -4,12 +4,13 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import axios from "axios";
 import { toast, Toaster } from "react-hot-toast";
+import { CONFIG, getApiUrl } from "@/lib/config";
 import {
   Plus, Eye, Trash2, Loader2, Send, Clock, FileText, AlertCircle,
   CheckCircle2, Camera, Globe, Video, Search,
 } from "lucide-react";
 
-const API = "http://localhost:5000/api/posts";
+const API = getApiUrl(CONFIG.API.POSTS);
 const cardStyle: React.CSSProperties = {
   background: "var(--bg-card)", borderRadius: 12, border: "1px solid var(--border-color)",
   boxShadow: "0 1px 3px rgba(0,0,0,0.04)", overflow: "hidden",

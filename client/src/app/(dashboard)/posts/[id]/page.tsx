@@ -4,13 +4,14 @@ import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import axios from "axios";
 import { toast, Toaster } from "react-hot-toast";
+import { CONFIG, getApiUrl } from "@/lib/config";
 import { 
   ArrowLeft, Clock, CheckCircle2, AlertCircle, FileText, 
   Globe, Send, Loader2, Image as ImageIcon, Calendar
 } from "lucide-react";
 import Link from "next/link";
 
-const API = "http://localhost:5000/api/posts";
+const API = getApiUrl(CONFIG.API.POSTS);
 
 const statusConfig: Record<string, { color: string; bg: string; icon: any; label: string }> = {
   PUBLISHED: { color: "var(--primary-color)", bg: "#f0fdf4", icon: CheckCircle2, label: "Published" },

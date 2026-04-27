@@ -8,8 +8,9 @@ import {
   Sparkles, Image as ImageIcon, Calendar, Send, Globe, Camera, Video,
   Loader2, X, Eye, Clock,
 } from "lucide-react";
+import { CONFIG, getApiUrl } from "@/lib/config";
 
-const API = "http://localhost:5000/api/posts";
+const API = getApiUrl(CONFIG.API.POSTS);
 
 const cardStyle: React.CSSProperties = {
   background: "var(--bg-card)", borderRadius: 12, border: "1px solid var(--border-color)",
@@ -46,7 +47,7 @@ export default function CreatePostPage() {
     setGenerating(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.post("http://localhost:5000/api/ai-providers/generate", {
+      const res = await axios.post(getApiUrl(CONFIG.API.AI_GENERATE), {
         prompt: caption || "Write an engaging social media post",
         type: "caption"
       }, { headers: { Authorization: `Bearer ${token}` } });
@@ -62,6 +63,8 @@ export default function CreatePostPage() {
 
   const [generatingImage, setGeneratingImage] = useState(false);
   const [imageUrl, setImageUrl] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleImageGenerate = async () => {
     const prompt = window.prompt("What kind of image do you want to generate?", caption || "A beautiful social media background");
@@ -70,7 +73,7 @@ export default function CreatePostPage() {
     setGeneratingImage(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.post("http://localhost:5000/api/ai-providers/generate", {
+      const res = await axios.post(getApiUrl(CONFIG.API.AI_GENERATE), {
         prompt,
         type: "image"
       }, { headers: { Authorization: `Bearer ${token}` } });
@@ -84,6 +87,39 @@ export default function CreatePostPage() {
     }
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check file type
+    if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+      toast.error('Please select an image or video file');
+      return;
+    }
+
+    // Check file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('File size must be less than 10MB');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      // Convert to base64 for now (in production, you'd upload to a server/cloud storage)
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const result = event.target?.result as string;
+        setImageUrl(result);
+        toast.success('File uploaded successfully');
+      };
+      reader.readAsDataURL(file);
+    } catch (err: any) {
+      toast.error('Failed to upload file');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleSubmit = async (status: "DRAFT" | "PUBLISHED" | "SCHEDULED") => {
     if (!caption.trim()) return toast.error("Write some content first");
     if (selectedPlatforms.length === 0) return toast.error("Select at least one platform");
@@ -92,15 +128,35 @@ export default function CreatePostPage() {
     setLoading(true);
     const token = localStorage.getItem("token");
     try {
-      await axios.post(API, {
+      // Step 1: Create the post
+      const createRes = await axios.post(API, {
         caption,
         mediaUrls: imageUrl ? [imageUrl] : [],
         platforms: selectedPlatforms,
-        status,
+        status: status === "PUBLISHED" ? "DRAFT" : status, // Create as DRAFT first, then publish
         scheduledAt: status === "SCHEDULED" ? new Date(`${scheduleDate}T${scheduleTime}`) : null,
       }, { headers: { Authorization: `Bearer ${token}` } });
-      toast.success(status === "DRAFT" ? "Saved as draft!" : status === "PUBLISHED" ? "Published!" : "Scheduled!");
-      setTimeout(() => router.push("/posts"), 800);
+
+      const postId = createRes.data.id;
+
+      // Step 2: If PUBLISHED and Facebook selected, publish to Facebook
+      if (status === "PUBLISHED" && selectedPlatforms.includes("facebook")) {
+        try {
+          await axios.post(getApiUrl(CONFIG.API.PUBLISH_POST(postId)), {}, { headers: { Authorization: `Bearer ${token}` } });
+          toast.success("Published to Facebook successfully!");
+        } catch (publishErr: any) {
+          const errorMsg = publishErr.response?.data?.message || "Failed to publish to Facebook";
+          toast.error(errorMsg);
+          // Still redirect but show error
+          setTimeout(() => router.push(CONFIG.FRONTEND.POSTS), 1500);
+          setLoading(false);
+          return;
+        }
+      } else {
+        toast.success(status === "DRAFT" ? "Saved as draft!" : "Scheduled!");
+      }
+
+      setTimeout(() => router.push(CONFIG.FRONTEND.POSTS), 800);
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Failed to create post");
     } finally { setLoading(false); }
@@ -164,20 +220,41 @@ export default function CreatePostPage() {
             />
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12 }}>
               <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{caption.length} characters</span>
-              <button onClick={handleImageGenerate} disabled={generatingImage} style={{
-                height: 32, padding: "0 12px", borderRadius: 8, background: "var(--bg-hover)",
-                color: "var(--text-secondary)", fontSize: 12, fontWeight: 500, border: "none", cursor: "pointer",
-                display: "flex", alignItems: "center", gap: 6,
-              }}>
-                {generatingImage ? <Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} /> : <ImageIcon style={{ width: 14, height: 14 }} />}
-                {generatingImage ? "Generating..." : "AI Generate Image"}
-              </button>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,video/*"
+                  onChange={handleFileUpload}
+                  style={{ display: "none" }}
+                />
+                <button onClick={() => fileInputRef.current?.click()} disabled={uploading} style={{
+                  height: 32, padding: "0 12px", borderRadius: 8, background: "var(--bg-hover)",
+                  color: "var(--text-secondary)", fontSize: 12, fontWeight: 500, border: "none", cursor: "pointer",
+                  display: "flex", alignItems: "center", gap: 6,
+                }}>
+                  {uploading ? <Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} /> : <ImageIcon style={{ width: 14, height: 14 }} />}
+                  {uploading ? "Uploading..." : "Upload Image/Video"}
+                </button>
+                <button onClick={handleImageGenerate} disabled={generatingImage} style={{
+                  height: 32, padding: "0 12px", borderRadius: 8, background: "var(--bg-hover)",
+                  color: "var(--text-secondary)", fontSize: 12, fontWeight: 500, border: "none", cursor: "pointer",
+                  display: "flex", alignItems: "center", gap: 6,
+                }}>
+                  {generatingImage ? <Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} /> : <Sparkles style={{ width: 14, height: 14 }} />}
+                  {generatingImage ? "Generating..." : "AI Generate Image"}
+                </button>
+              </div>
             </div>
             
-            {/* Generated Image Preview */}
+            {/* Generated Image/Video Preview */}
             {imageUrl && (
               <div style={{ marginTop: 16, position: "relative", width: "fit-content" }}>
-                <img src={imageUrl} alt="Generated" style={{ width: 200, height: 200, objectFit: "cover", borderRadius: 10, border: "1px solid var(--border-color)" }} />
+                {imageUrl.startsWith('data:video') ? (
+                  <video src={imageUrl} controls style={{ width: 200, height: 200, objectFit: "cover", borderRadius: 10, border: "1px solid var(--border-color)" }} />
+                ) : (
+                  <img src={imageUrl} alt="Generated" style={{ width: 200, height: 200, objectFit: "cover", borderRadius: 10, border: "1px solid var(--border-color)" }} />
+                )}
                 <button onClick={() => setImageUrl("")} style={{
                   position: "absolute", top: -8, right: -8, background: "#ef4444", color: "#fff",
                   width: 24, height: 24, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center",

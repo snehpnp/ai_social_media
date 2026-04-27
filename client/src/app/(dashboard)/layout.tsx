@@ -1,34 +1,29 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
+import axios from "axios";
+import { toast, Toaster } from "react-hot-toast";
+import { CONFIG, getApiUrl } from "@/lib/config";
 import {
-  LayoutDashboard,
-  Send,
-  Calendar,
-  BarChart3,
-  Settings,
-  LogOut,
-  Users as UsersIcon,
-  Sparkles,
-  Search,
-  Bell,
-  ChevronDown,
-  Crown,
-  Menu,
-  X,
-  Globe,
+  LayoutDashboard, Users, FileText, Calendar, Settings, Crown,
+  LogOut, Menu, X, Sparkles, Bell, Search,
+  ChevronDown, Globe,
   Sun,
   Moon,
+  Settings2,
+  Send,
+  BarChart3,
 } from "lucide-react";
 
 const adminItems = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "User Management", href: "/users", icon: UsersIcon },
+  { name: "User Management", href: "/users", icon: Users },
   { name: "Social Config", href: "/social-config", icon: Globe },
   { name: "AI Settings", href: "/ai-config", icon: Sparkles },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
+  { name: "Admin Settings", href: "/admin-settings", icon: Settings2 },
 ];
 
 const userItems = [
@@ -37,30 +32,58 @@ const userItems = [
   { name: "My Posts", href: "/posts", icon: Send },
   { name: "Scheduler", href: "/scheduler", icon: Calendar },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
-  { name: "Accounts", href: "/settings", icon: Settings },
+  { name: "Accounts", href: "/accounts", icon: Settings },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<{ name: string; email: string; role: string } | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [appSettings, setAppSettings] = useState({
+    APP_NAME: "Social Vibe",
+    APP_LOGO_URL: "https://framerusercontent.com/images/OmiFNAsUnVnklI6y2SA9EWiDJBk.png?width=915&height=273",
+  });
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
     if (userData) {
-      setUser(JSON.parse(userData));
+      try {
+        const parsed = JSON.parse(userData);
+        setUser(parsed);
+      } catch {
+        router.push("/login");
+      }
     } else {
       router.push("/login");
     }
 
     // Load theme preference
     const savedTheme = localStorage.getItem("theme");
-    if (savedTheme === "dark" || (!savedTheme && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+    if (savedTheme === "dark" || (!savedTheme && typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
       setTheme("dark");
       document.documentElement.classList.add("dark");
     }
+
+    // Fetch app settings for logo
+    const fetchSettings = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await axios.get(getApiUrl(CONFIG.API.ADMIN_SETTINGS), {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.data.APP_LOGO_URL) {
+          setAppSettings(prev => ({ ...prev, APP_LOGO_URL: res.data.APP_LOGO_URL }));
+        }
+        if (res.data.APP_NAME) {
+          setAppSettings(prev => ({ ...prev, APP_NAME: res.data.APP_NAME }));
+        }
+      } catch {
+        // Use default settings
+      }
+    };
+    fetchSettings();
   }, [router]);
 
   const toggleTheme = () => {
@@ -116,7 +139,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       >
         {/* Logo */}
         <div style={{ height: 64, display: "flex", alignItems: "center", gap: 12, padding: "0 20px", borderBottom: "1px solid var(--border-color)", flexShrink: 0 }}>
-          <img src="https://framerusercontent.com/images/OmiFNAsUnVnklI6y2SA9EWiDJBk.png?width=915&height=273" alt="AI Social Vibe Logo" style={{ width: 215, height: 40, objectFit: "cover" }} />
+          <img src={appSettings.APP_LOGO_URL} alt={appSettings.APP_NAME + " Logo"} style={{ width: 215, height: 40, objectFit: "cover" }} />
 
           {/* Close btn on mobile */}
           <button

@@ -2,6 +2,7 @@ import express, { Express, Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
+import { CONFIG } from './config';
 
 import authRoutes from './routes/authRoutes';
 import postRoutes from './routes/postRoutes';
@@ -10,11 +11,12 @@ import adminRoutes from './routes/adminRoutes';
 import dashboardRoutes from './routes/dashboardRoutes';
 import aiProviderRoutes from './routes/aiProviderRoutes';
 import socialRoutes from './routes/socialRoutes';
+import { loadScheduledPosts } from './services/queueService';
 
 dotenv.config();
 
-const app: Express = express();
-const port = process.env.PORT || 5000;
+const app = express();
+const port = CONFIG.PORT;
 const prisma = new PrismaClient();
 
 // Middleware
@@ -42,8 +44,11 @@ app.get('/health', (req: Request, res: Response) => {
 });
 
 // Start Server
-app.listen(port, () => {
-  console.log(`⚡️[server]: Server is running at http://localhost:${port}`);
+app.listen(port, async () => {
+  console.log(`⚡️[server]: Server is running at http://localhost:${CONFIG.PORT}`);
+  
+  // Load scheduled posts on startup
+  await loadScheduledPosts();
 });
 
 export { prisma };
