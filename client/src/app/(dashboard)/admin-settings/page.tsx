@@ -12,7 +12,11 @@ import {
   Globe, 
   Key,
   RefreshCw,
-  CheckCircle2
+  CheckCircle2,
+  ExternalLink,
+  ChevronDown,
+  ChevronUp,
+  Info
 } from "lucide-react";
 
 import { getToken } from "@/lib/auth";
@@ -60,6 +64,7 @@ export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<"branding" | "social">("branding");
+  const [showFBSteps, setShowFBSteps] = useState(false);
   
   const [settings, setSettings] = useState({
     // Branding
@@ -326,6 +331,61 @@ export default function AdminSettingsPage() {
                       style={inputStyle}
                     />
                   </div>
+                </div>
+
+                {/* Help Section */}
+                <div style={{ marginTop: 24, borderTop: "1px solid var(--border-color)", paddingTop: 20 }}>
+                  <button 
+                    onClick={() => setShowFBSteps(!showFBSteps)}
+                    style={{ 
+                      background: "none", border: "none", color: "#2563eb", fontSize: 14, 
+                      fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
+                      padding: 0
+                    }}
+                  >
+                    {showFBSteps ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    How to get these credentials? (Step-by-step guide)
+                  </button>
+
+                  {showFBSteps && (
+                    <div style={{ 
+                      marginTop: 16, padding: 20, background: "var(--bg-input)", borderRadius: 12, 
+                      border: "1px solid var(--border-color)", fontSize: 14, lineHeight: "1.6", color: "var(--text-secondary)"
+                    }}>
+                      <ol style={{ margin: 0, paddingLeft: 20, display: "grid", gap: 12 }}>
+                        <li>
+                          Go to the <b><a href="https://developers.facebook.com/" target="_blank" rel="noopener noreferrer" style={{ color: "#2563eb", textDecoration: "none" }}>Facebook Developers Portal <ExternalLink size={12} style={{ display: "inline" }} /></a></b> and log in with your Facebook account.
+                        </li>
+                        <li>
+                          Click on <b>&quot;My Apps&quot;</b> in the top menu and then click the <b>&quot;Create App&quot;</b> button.
+                        </li>
+                        <li>
+                          Select <b>&quot;Other&quot;</b> as the use case, then choose <b>&quot;Consumer&quot;</b> or <b>&quot;Business&quot;</b> depending on your needs.
+                        </li>
+                        <li>
+                          Give your app a <b>Display Name</b> and click <b>&quot;Create App&quot;</b>.
+                        </li>
+                        <li>
+                          In the App Dashboard, go to <b>App Settings &gt; Basic</b> in the left sidebar.
+                        </li>
+                        <li>
+                          Here you will find your <b>App ID</b> and <b>App Secret</b>. Click &quot;Show&quot; to reveal the Secret.
+                        </li>
+                        <li>
+                          <b>Crucial:</b> Scroll down on the same page, click <b>&quot;Add Platform&quot;</b>, select <b>&quot;Website&quot;</b>, and enter your site URL (<code>http://localhost:3000</code> or your production domain).
+                        </li>
+                        <li>
+                          Go to <b>App Review &gt; Permissions and Features</b> and ensure you have access to <code>public_profile</code> and any other needed permissions.
+                        </li>
+                      </ol>
+                      <div style={{ marginTop: 16, display: "flex", gap: 8, alignItems: "flex-start", padding: "12px 16px", background: "rgba(37, 99, 235, 0.05)", borderRadius: 8, border: "1px solid rgba(37, 99, 235, 0.1)" }}>
+                        <Info size={18} style={{ color: "#2563eb", marginTop: 2, flexShrink: 0 }} />
+                        <p style={{ margin: 0, fontSize: 13, color: "#1e40af" }}>
+                          <b>Note:</b> Make sure to set your App Mode to <b>&quot;Live&quot;</b> in the top bar of the dashboard when you are ready for production.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

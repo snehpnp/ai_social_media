@@ -117,7 +117,7 @@ export default function AuthPage() {
 
         <div style={{ position: "relative", zIndex: 1, maxWidth: 400, textAlign: "center" }}>
           <div style={{
-            width: 100, height: 100, borderRadius: "50%", background: "rgba(255,255,255,0.15)",
+            
             display: "flex", alignItems: "center", justifyContent: "center",
             margin: "0 auto 32px", backdropFilter: "blur(10px)", padding: 4,
           }}>

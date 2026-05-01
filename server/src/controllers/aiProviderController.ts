@@ -21,15 +21,15 @@ const PROVIDER_REGISTRY: Record<string, {
       { id: 'gemma2-9b-it', name: 'Gemma 2 9B' },
     ],
   },
-  stability: {
-    name: 'Stability AI',
-    capabilities: ['image'],
-    defaultModel: 'sd3.5-large',
-    defaultUrl: 'https://api.stability.ai/v2beta/stable-image/generate/sd3',
+  pollinations: {
+    name: 'Pollinations AI',
+    capabilities: ['text', 'image', 'caption', 'hashtag', 'code'],
+    defaultModel: 'flux',
+    defaultUrl: 'https://image.pollinations.ai/prompt',
     models: [
-      { id: 'sd3.5-large', name: 'Stable Diffusion 3.5 Large' },
-      { id: 'sd3.5-medium', name: 'Stable Diffusion 3.5 Medium' },
-      { id: 'sd3-medium', name: 'Stable Diffusion 3 Medium' },
+      { id: 'flux', name: 'FLUX.1' },
+      { id: 'turbo', name: 'Turbo' },
+      { id: 'hd', name: 'HD Quality' },
     ],
   },
   openai: {
@@ -151,20 +151,16 @@ export const testProvider = async (req: Request, res: Response) => {
       } catch (e: any) {
         errorMsg = e.message || 'Connection failed';
       }
-    } else if (slug === 'stability') {
-      // Stability AI test — lightweight request
+    } else if (slug === 'pollinations') {
+      // Pollinations AI test — check image endpoint
       try {
-        const response = await fetch('https://api.stability.ai/v1/engines/list', {
-          headers: { 'Authorization': `Bearer ${provider.apiKey}` },
-        });
-
+        const response = await fetch('https://image.pollinations.ai/models');
         if (response.ok) {
-          const engines = await response.json();
-          responseText = `Connected! ${engines.length || 0} engines available.`;
+          const models = await response.json();
+          responseText = `Connected! ${Array.isArray(models) ? models.length : 'Multiple'} models available.`;
           success = true;
         } else {
-          const err = await response.json();
-          errorMsg = err.message || `HTTP ${response.status}`;
+          errorMsg = `HTTP ${response.status}`;
         }
       } catch (e: any) {
         errorMsg = e.message || 'Connection failed';
@@ -240,9 +236,22 @@ export const generateContent = async (req: Request, res: Response) => {
 
     // Find the best provider for this task
     let provider;
-    if (providerSlug) {
+    
+    // Check if Groq is requested specifically for content/hashtags
+    if (!providerSlug && (type === 'caption' || type === 'hashtag' || type === 'description')) {
+      provider = await prisma.aIProvider.findFirst({
+        where: {
+          slug: 'groq',
+          isEnabled: true,
+          isVerified: true
+        }
+      });
+    }
+
+    if (!provider && providerSlug) {
       provider = await prisma.aIProvider.findUnique({ where: { slug: providerSlug } });
     }
+    
     if (!provider) {
       // Auto-select: find enabled & verified provider with matching capability
       const capability = type === 'image' ? 'image' : 'text';
@@ -260,44 +269,132 @@ export const generateContent = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'No AI provider configured for this task. Connect one in AI Settings.' });
     }
 
-    if (type === 'image' && provider.slug === 'stability') {
-      // Stability AI image generation
-      const formData = new FormData();
-      formData.append('prompt', prompt);
-      formData.append('output_format', 'png');
-
-      const response = await fetch(provider.apiUrl || 'https://api.stability.ai/v2beta/stable-image/generate/sd3', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${provider.apiKey}`, 'Accept': 'application/json' },
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errText = await response.text();
-        let errMsg = 'Image generation failed';
-        try {
-          const errJson = JSON.parse(errText);
-          errMsg = errJson.message || errJson.errors?.join(', ') || errText;
-        } catch (e) {
-          errMsg = errText || `HTTP ${response.status}`;
-        }
-        return res.status(response.status).json({ message: errMsg, detail: errText });
+    if (type === 'image') {
+      // Only Pollinations AI for image generation
+      if (provider.slug !== 'pollinations') {
+        return res.status(400).json({ message: 'Image generation is only available with Pollinations AI. Please connect Pollinations AI in AI Settings.' });
       }
 
-      const data = await response.json();
-      // Update usage
-      const user = (req as any).user;
-      await prisma.user.update({ where: { id: user.userId }, data: { aiUsageCount: { increment: 1 } } });
+      // Check for base64 image reference (image-to-image generation)
+      const { referenceImage } = req.body;
+      const maxRetries = 3;
+      let attempt = 0;
+      let lastError: any;
 
-      return res.json({ type: 'image', content: data.image, provider: provider.name });
+      while (attempt < maxRetries) {
+        try {
+          const encodedPrompt = encodeURIComponent(prompt);
+          const model = provider.model || 'flux';
+          const seed = Math.floor(Math.random() * 1000000);
+          
+          // Build base URL
+          let imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?model=${model}&width=1024&height=1024&nologo=true&seed=${seed}`;
+
+          // If user provided a reference image, use POST method with form data
+          // Otherwise use simple GET request
+          let response;
+          
+          if (referenceImage && referenceImage.startsWith('data:image')) {
+            // For image-to-image, use POST to avoid 431 error (URL too long)
+            const base64Data = referenceImage.split(',')[1];
+            const binaryData = Buffer.from(base64Data, 'base64');
+            
+            // Create form data
+            const formData = new FormData();
+            formData.append('image', new Blob([binaryData], { type: 'image/png' }));
+            
+            response = await fetch(imageUrl, {
+              method: 'POST',
+              body: formData,
+            });
+          } else {
+            // Simple text-to-image generation
+            response = await fetch(imageUrl);
+          }
+
+          if (response.status === 429) {
+            // Rate limited - wait and retry with exponential backoff
+            const delay = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s
+            console.log(`Rate limited by Pollinations, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            attempt++;
+            lastError = new Error('Rate limited (429)');
+            continue;
+          }
+
+          if (!response.ok) {
+            const errText = await response.text();
+            return res.status(response.status).json({ message: `Image generation failed: ${errText || `HTTP ${response.status}`}` });
+          }
+
+          const imageBuffer = await response.arrayBuffer();
+          const base64Image = Buffer.from(imageBuffer).toString('base64');
+          const dataUrl = `data:image/png;base64,${base64Image}`;
+
+          // Update usage
+          const user = (req as any).user;
+          await prisma.user.update({ where: { id: user.userId }, data: { aiUsageCount: { increment: 1 } } });
+
+          return res.json({ type: 'image', content: dataUrl, provider: provider.name });
+        } catch (e: any) {
+          lastError = e;
+          if (attempt < maxRetries - 1) {
+            const delay = Math.pow(2, attempt) * 1000;
+            await new Promise(resolve => setTimeout(resolve, delay));
+          }
+          attempt++;
+        }
+      }
+
+      // All retries failed
+      return res.status(429).json({
+        message: 'Image generation service is busy. Please wait a moment and try again.',
+        error: lastError?.message || 'Too many requests after retries'
+      });
+    } else if (type === 'text' && provider.slug === 'pollinations') {
+      // Pollinations AI text generation
+      try {
+        const encodedPrompt = encodeURIComponent(prompt);
+        const response = await fetch(`https://text.pollinations.ai/${encodedPrompt}?seed=42&json=false`);
+
+        if (!response.ok) {
+          return res.status(response.status).json({ message: `Text generation failed: HTTP ${response.status}` });
+        }
+
+        const content = await response.text();
+
+        // Update usage
+        const user = (req as any).user;
+        await prisma.user.update({ where: { id: user.userId }, data: { aiUsageCount: { increment: 1 } } });
+
+        return res.json({ type: 'text', content, provider: provider.name });
+      } catch (e: any) {
+        return res.status(500).json({ message: 'Text generation failed', error: e.message });
+      }
     } else {
       // Text generation (Groq / OpenAI compatible)
+      const { tone = 'engaging', audience = 'general', language = 'english' } = req.body.config || {};
+      
       const systemPrompts: Record<string, string> = {
-        caption: 'You are a social media expert. Generate an engaging, creative caption for a social media post. Include relevant emojis and hashtags. Keep it concise and compelling.',
-        hashtag: 'You are a social media expert. Generate 10-15 relevant, trending hashtags for the given topic. Return only hashtags separated by spaces.',
-        description: 'You are a content writer. Write a detailed, engaging description for the given topic. Make it informative and appealing.',
+        caption: `You are a social media expert. Generate an engaging, creative caption for a social media post. 
+        Include relevant emojis and hashtags. 
+        Tone: ${tone}. 
+        Target Audience: ${audience}. 
+        Language: ${language}.
+        Keep it concise and compelling.`,
+        hashtag: `You are a social media expert. Generate 10-15 relevant, trending hashtags for the given topic. 
+        Target Audience: ${audience}.
+        Return only hashtags separated by spaces.`,
+        description: `You are a content writer. Write a detailed, engaging description for the given topic. 
+        Tone: ${tone}. 
+        Target Audience: ${audience}. 
+        Language: ${language}.
+        Make it informative and appealing.`,
         code: 'You are a helpful coding assistant. Provide clean, well-commented code.',
-        general: 'You are a helpful AI assistant. Provide a clear, useful response.',
+        general: `You are a helpful AI assistant. 
+        Tone: ${tone}. 
+        Language: ${language}.
+        Provide a clear, useful response.`,
       };
 
       const apiUrl = provider.apiUrl || PROVIDER_REGISTRY[provider.slug]?.defaultUrl;

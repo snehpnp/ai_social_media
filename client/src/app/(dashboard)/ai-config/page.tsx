@@ -26,11 +26,11 @@ const inputStyle: React.CSSProperties = {
 };
 
 // Provider visual configs
-const providerMeta: Record<string, {
+const PROVIDER_META: Record<string, {
   icon: string; color: string; bg: string; gradient: string; desc: string;
 }> = {
   groq: { icon: "⚡", color: "#f97316", bg: "rgba(249, 115, 22, 0.1)", gradient: "linear-gradient(135deg, #f97316, #ea580c)", desc: "Ultra-fast LLM inference — Captions, hashtags, descriptions" },
-  stability: { icon: "🎨", color: "#7c3aed", bg: "rgba(124, 58, 237, 0.1)", gradient: "linear-gradient(135deg, #7c3aed, #6d28d9)", desc: "AI image generation — Social media posters & graphics" },
+  pollinations: { icon: "�", color: "#ec4899", bg: "rgba(236, 72, 153, 0.1)", gradient: "linear-gradient(135deg, #ec4899, #db2777)", desc: "Free AI image & text generation — No API key needed" },
   openai: { icon: "🧠", color: "#10b981", bg: "rgba(16, 185, 129, 0.1)", gradient: "linear-gradient(135deg, #10b981, #059669)", desc: "GPT models — Advanced content & code generation" },
 };
 
@@ -156,7 +156,7 @@ export default function AIConfigPage() {
               </h2>
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 {providers.map((p) => {
-                  const meta = providerMeta[p.slug] || { icon: "🤖", color: "var(--text-secondary)", bg: "#f3f4f6", gradient: "#6b7280", desc: "" };
+                  const meta = PROVIDER_META[p.slug] || { icon: "🤖", color: "var(--text-secondary)", bg: "#f3f4f6", gradient: "#6b7280", desc: "" };
                   const isExpanded = expanded === p.slug;
                   const result = testResult?.slug === p.slug ? testResult : null;
 
@@ -320,7 +320,7 @@ export default function AIConfigPage() {
               </h2>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 14 }}>
                 {availableProviders.map(([slug, info]: [string, any]) => {
-                  const meta = providerMeta[slug] || { icon: "🤖", color: "var(--text-secondary)", bg: "#f3f4f6", gradient: "#6b7280", desc: "" };
+                  const meta = PROVIDER_META[slug] || { icon: "🤖", color: "var(--text-secondary)", bg: "#f3f4f6", gradient: "#6b7280", desc: "" };
                   return (
                     <div key={slug} style={{ ...cardStyle, padding: 24, display: "flex", flexDirection: "column" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
@@ -401,16 +401,16 @@ export default function AIConfigPage() {
             <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 24 }}>
               <div style={{
                 width: 48, height: 48, borderRadius: 14,
-                background: providerMeta[connectSlug]?.gradient || "#6b7280",
+                background: PROVIDER_META[connectSlug]?.gradient || "#6b7280",
                 display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22,
               }}>
-                {providerMeta[connectSlug]?.icon || "🤖"}
+                {PROVIDER_META[connectSlug]?.icon || "🤖"}
               </div>
               <div>
                 <h2 style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
                   Connect {registry[connectSlug]?.name}
                 </h2>
-                <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>{providerMeta[connectSlug]?.desc}</p>
+                <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>{PROVIDER_META[connectSlug]?.desc}</p>
               </div>
             </div>
 
@@ -423,9 +423,9 @@ export default function AIConfigPage() {
                 <div style={{ position: "relative" }}>
                   <input
                     type={showKey ? "text" : "password"}
-                    placeholder={connectSlug === "groq" ? "gsk_..." : connectSlug === "stability" ? "sk-..." : "sk-..."}
+                    placeholder={connectSlug === "groq" ? "gsk_..." : connectSlug === "pollinations" ? "Optional - Pollinations is free!" : "sk-..."}
                     value={apiKey} onChange={(e) => setApiKey(e.target.value)}
-                    required
+                    required={connectSlug !== "pollinations"}
                     style={{ ...inputStyle, paddingRight: 42 }}
                   />
                   <button type="button" onClick={() => setShowKey(!showKey)} style={{
@@ -437,7 +437,7 @@ export default function AIConfigPage() {
                 </div>
                 <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
                   {connectSlug === "groq" && <a href="https://console.groq.com/keys" target="_blank" style={{ color: "#f97316" }}>Get your Groq API key →</a>}
-                  {connectSlug === "stability" && <a href="https://platform.stability.ai/account/keys" target="_blank" style={{ color: "#7c3aed" }}>Get your Stability AI key →</a>}
+                  {connectSlug === "pollinations" && <span style={{ color: "#ec4899" }}>🎉 Pollinations AI is free - no API key required!</span>}
                   {connectSlug === "openai" && <a href="https://platform.openai.com/api-keys" target="_blank" style={{ color: "#10b981" }}>Get your OpenAI key →</a>}
                 </p>
               </div>
@@ -477,7 +477,7 @@ export default function AIConfigPage() {
 
               <button type="submit" disabled={saving} style={{
                 height: 44, borderRadius: 10,
-                background: providerMeta[connectSlug]?.gradient || "#16a34a",
+                background: PROVIDER_META[connectSlug]?.gradient || "#16a34a",
                 color: "#fff", fontSize: 14, fontWeight: 600, border: "none", cursor: "pointer",
                 display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 8,
                 opacity: saving ? 0.7 : 1,

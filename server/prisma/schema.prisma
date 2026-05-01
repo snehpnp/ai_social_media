@@ -89,8 +89,8 @@ model Subscription {
 
 model AIProvider {
   id           String   @id @default(uuid())
-  name         String   // Display name e.g. "Groq", "Stability AI"
-  slug         String   @unique // e.g. "groq", "stability", "openai"
+  name         String   // Display name e.g. "Groq", "Pollinations AI"
+  slug         String   @unique // e.g. "groq", "pollinations", "openai"
   apiKey       String   @db.Text
   apiUrl       String?  // Custom endpoint URL
   model        String?  // Default model e.g. "llama-3.3-70b-versatile"
